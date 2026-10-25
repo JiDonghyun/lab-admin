@@ -1,0 +1,8 @@
+{
+  "//": "dependency-cruiser 가 web 의 @/ 별칭을 풀 때만 쓴다. apps/web/tsconfig.app.json 의 paths 와 같게 유지한다.",
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "paths": { "@/*": ["./apps/web/src/*"] }
+  },
+  "include": ["apps/*/src/**/*"]
+}

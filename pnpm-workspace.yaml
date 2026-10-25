@@ -1,8 +1,14 @@
 packages:
+  - 'apps/*'
   - 'packages/*'
 
 # pnpm 11은 의존성의 설치 스크립트를 기본 차단하고, CI에서는 승인되지 않은 스크립트가 있으면 설치가 실패한다.
 # @swc/core, nx: OS별 네이티브 바이너리를 준비하는 스크립트라 허용한다.
+# 나머지는 플랫폼별 바이너리를 optionalDependencies로 받으므로 스크립트가 필요 없다.
 allowBuilds:
+  '@parcel/watcher': false
   '@swc/core': true
+  esbuild: false
   nx: true
+  unrs-resolver: false
+  '@nestjs/core': false
