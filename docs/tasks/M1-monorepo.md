@@ -13,67 +13,71 @@
 
 ## 작업
 
-- [ ] T1. 패키지 스코프와 workspace 설정
-  - 파일: `package.json`(`@lab-admin/source`), `tsconfig.base.json`(`customConditions`), `pnpm-workspace.yaml`(`apps/*` 추가, `allowBuilds`)
-  - 근거: plan.md 2.1
-  - 검증: `pnpm install`이 경고 없이 끝난다
+### T1. 패키지 스코프와 workspace 설정
 
-- [ ] T2. Nx 플러그인 추가
-  - 파일: `nx.json`, `package.json`
-  - 내용: `@nx/nest`, `@nx/webpack`, `@nx/jest`, `@nx/react`, `@nx/vite`, `@nx/vitest`, `@nx/eslint` (23.2.0)
-  - 근거: design/backend.md 2장
-  - 검증: `pnpm nx list`에 플러그인이 보인다
+- 근거: plan.md 2.1
+- [x] `package.json` 이름을 `@lab-admin/source`로 변경
+- [x] `tsconfig.base.json` `customConditions`를 `@lab-admin/source`로 변경
+- [ ] `pnpm-workspace.yaml`에 `apps/*` 추가, `allowBuilds` 설정
+- [ ] 검증: `pnpm install`이 경고 없이 끝난다
 
-- [ ] T3. `apps/api` 생성
-  - 파일: `apps/api/**`
-  - 내용
-    - `nx g @nx/nest:app apps/api --tags=scope:api --unitTestRunner=jest --e2eTestRunner=none --enableTypedLinting --useProjectJson --strict`
-    - `AppModule`을 `src/app.module.ts`로 옮기고 생성기 예제(`src/app/`)를 지운다
-    - `src/app.setup.ts`: `/api` prefix
-    - `src/shared/presentation/health.controller.ts`: `GET /api/health`
-    - 테스트를 `@swc/jest`에서 ts-jest로 바꾼다. `tsconfig.spec.json`에 `rootDir` (TS 6 요구사항)
-  - 근거: design/backend.md 3장
-  - 검증: `pnpm nx run-many -t build test typecheck -p api`
+### T2. Nx 플러그인 추가
 
-- [ ] T4. `apps/web` 생성과 레이아웃
-  - 파일: `apps/web/**`
-  - 내용
-    - `nx g @nx/react:app apps/web --bundler=vite --minimal --port=4200 --tags=scope:web --unitTestRunner=vitest --e2eTestRunner=none --enableTypedLinting --useProjectJson`
-    - antd 6, React Router 8 추가
-    - FSD 구조: `app`(Provider, 라우터), `widgets/app-layout`(사이드 메뉴 5개 + 헤더), `pages/coming-soon`(메뉴별 자리표시자), `pages/not-found`, `shared/config`(라우트 경로 상수)
-    - `@/` 별칭 (`tsconfig.app.json`, `tsconfig.spec.json`, `vite.config.mts`)
-    - vite proxy `/api` → `http://localhost:3000`
-  - 근거: design/frontend.md 3.1, 3.2, 3.5
-  - 검증: `pnpm nx run-many -t build test typecheck -p web`. `AppLayout` 테스트(메뉴 표시, 현재 경로 선택)
+- 근거: design/backend.md 2장
+- [ ] `@nx/nest`, `@nx/webpack`, `@nx/jest`, `@nx/react`, `@nx/vite`, `@nx/vitest`, `@nx/eslint` (23.2.0) 설치, `nx.json` 등록
+- [ ] 검증: `pnpm nx list`에 플러그인이 보인다
 
-- [ ] T5. ESLint 규칙
-  - 파일: `eslint.config.mjs`, `apps/api/eslint.config.mjs`, `apps/web/eslint.config.mjs`
-  - 내용
-    - 루트: Nx tag 경계(`scope:api`, `scope:web`, `scope:shared`), `any` 금지, 함수 길이 50줄 경고. 타입 기반 규칙(`no-floating-promises`, `no-misused-promises`)은 앱에서 켠다
-    - api: DDD 방향, Symbol DI·`@Inject` 금지, infrastructure의 `deleteOne`/`deleteMany`/`findOneAndDelete`/`findByIdAndDelete`/`remove` 금지
-    - web: FSD 레이어 방향, slice 내부 파일 직접 import 금지
-  - 근거: design/backend.md 7장, design/frontend.md 7장, ADR-0001, ADR-0004
-  - 검증: `pnpm lint`. 규칙마다 위반 파일을 임시로 만들어 에러가 나는지 확인
+### T3. `apps/api` 생성
 
-- [ ] T6. dependency-cruiser
-  - 파일: `.dependency-cruiser.cjs`, `tsconfig.depcruise.json`, `package.json`(`deps:check`)
-  - 내용: DDD 경계, FSD 레이어 방향, 같은 레이어 slice 간 import 금지, slice 공개 API, 순환 참조, 고아 파일 경고
-  - 근거: design/backend.md 7장, design/frontend.md 7장
-  - 검증: `pnpm deps:check`. 규칙마다 위반 파일로 확인
+- 근거: design/backend.md 3장
+- [ ] `nx g @nx/nest:app apps/api --tags=scope:api --unitTestRunner=jest --e2eTestRunner=none --enableTypedLinting --useProjectJson --strict`
+- [ ] `AppModule`을 `src/app.module.ts`로 옮기고 생성기 예제(`src/app/`) 삭제
+- [ ] `src/app.setup.ts`: `/api` prefix
+- [ ] `src/shared/presentation/health.controller.ts`: `GET /api/health`
+- [ ] 테스트를 `@swc/jest`에서 ts-jest로 변경, `tsconfig.spec.json`에 `rootDir` (TS 6 요구사항)
+- [ ] 검증: `pnpm nx run-many -t build test typecheck -p api`
 
-- [ ] T7. 루트 스크립트, CI, README
-  - 파일: `package.json`, `.github/workflows/ci.yml`(`pnpm deps:check` 추가), `README.md`
-  - 내용: `dev`, `build`, `test`, `lint`, `typecheck`, `deps:check`, `format`
-  - 근거: design/backend.md 2장
-  - 검증: 각 스크립트 실행
+### T4. `apps/web` 생성과 레이아웃
+
+- 근거: design/frontend.md 3.1, 3.2, 3.5
+- [ ] `nx g @nx/react:app apps/web --bundler=vite --minimal --port=4200 --tags=scope:web --unitTestRunner=vitest --e2eTestRunner=none --enableTypedLinting --useProjectJson`
+- [ ] antd 6, React Router 8 추가
+- [ ] FSD 구조: `app`(Provider, 라우터), `widgets/app-layout`(사이드 메뉴 5개 + 헤더), `pages/coming-soon`(메뉴별 자리표시자), `pages/not-found`, `shared/config`(라우트 경로 상수)
+- [ ] `@/` 별칭 (`tsconfig.app.json`, `tsconfig.spec.json`, `vite.config.mts`)
+- [ ] vite proxy `/api` → `http://localhost:3000`
+- [ ] 검증: `pnpm nx run-many -t build test typecheck -p web`, `AppLayout` 테스트(메뉴 표시, 현재 경로 선택)
+
+### T5. ESLint 규칙
+
+- 근거: design/backend.md 7장, design/frontend.md 7장, ADR-0001, ADR-0004
+- [ ] 루트(`eslint.config.mjs`): Nx tag 경계(`scope:api`, `scope:web`, `scope:shared`), `any` 금지, 함수 길이 50줄 경고. 타입 기반 규칙(`no-floating-promises`, `no-misused-promises`)은 앱에서 켠다
+- [ ] api(`apps/api/eslint.config.mjs`): DDD 방향, Symbol DI·Inject 데코레이터 금지, infrastructure의 `deleteOne`/`deleteMany`/`findOneAndDelete`/`findByIdAndDelete`/`remove` 금지
+- [ ] web(`apps/web/eslint.config.mjs`): FSD 레이어 방향, slice 내부 파일 직접 import 금지
+- [ ] 검증: `pnpm lint`. 규칙마다 위반 파일을 임시로 만들어 에러가 나는지 확인
+
+### T6. dependency-cruiser
+
+- 근거: design/backend.md 7장, design/frontend.md 7장
+- [ ] `.dependency-cruiser.cjs`: DDD 경계, FSD 레이어 방향, 같은 레이어 slice 간 import 금지, slice 공개 API, 순환 참조, 고아 파일 경고
+- [ ] `tsconfig.depcruise.json`: `@/` 별칭
+- [ ] `package.json`에 `deps:check` 스크립트
+- [ ] 검증: `pnpm deps:check`. 규칙마다 위반 파일로 확인
+
+### T7. 루트 스크립트, CI, README
+
+- 근거: design/backend.md 2장
+- [ ] `package.json` 스크립트: `dev`, `build`, `test`, `lint`, `typecheck`, `deps:check`, `format`
+- [ ] `.github/workflows/ci.yml`에 `pnpm deps:check` 추가
+- [ ] `README.md` 실행 방법
+- [ ] 검증: 각 스크립트 실행
 
 ## 완료 기준
 
-- plan.md 5장 공통 기준 (`pnpm lint`, `pnpm deps:check`, es-arch-check critical 0건, 코드 리뷰)
+- [ ] plan.md 5장 공통 기준 (`pnpm lint`, `pnpm deps:check`, es-arch-check critical 0건, 코드 리뷰)
 - `pnpm dev` 후 확인
-  - `http://localhost:3000/api/health`와 `http://localhost:4200/api/health`(프록시)가 `{"status":"ok"}`
-  - `/`는 `/labs`로 이동하고, 메뉴를 누르면 해당 경로로 바뀌며 선택 표시가 따라간다
-  - 없는 경로는 404 화면
+  - [ ] `http://localhost:3000/api/health`와 `http://localhost:4200/api/health`(프록시)가 `{"status":"ok"}`
+  - [ ] `/`는 `/labs`로 이동하고, 메뉴를 누르면 해당 경로로 바뀌며 선택 표시가 따라간다
+  - [ ] 없는 경로는 404 화면
 
 ## 결정 사항
 
