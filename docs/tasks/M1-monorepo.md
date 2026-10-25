@@ -88,5 +88,5 @@
 - **Symbol DI 정규식 보완**: ewoosoft ESLint 템플릿의 정규식은 대소문자를 구분해 `LAB_ORDER_REPOSITORY = Symbol(...)`을 놓친다. `_REPOSITORY`, `_GATEWAY`도 잡도록 고친다.
 - **FSD 공개 API 규칙 재작성**: dependency-cruiser 템플릿의 규칙은 출발 slice를 구분하지 못한다. 출발 slice를 캡처해 같은 slice만 예외로 둔다.
 - **ESLint 메시지에 `@Inject(` 문자열을 쓰지 않는다**: es-arch-check가 설정 파일의 메시지를 위반으로 오인한다.
-- **TanStack Query, dayjs 플러그인은 M3에서 추가**: M1 화면은 데이터를 조회하지 않는다.
+- **TanStack Query, dayjs 플러그인은 M1에서 추가하지 않는다**: M1 화면은 데이터를 조회하지 않는다. TanStack Query는 M2, dayjs 플러그인은 날짜를 처음 표시하는 단계에서 추가한다.
 - **Nx tag 경계는 위반 확인을 미룬다**: 지금은 앱 두 개뿐이라 경계를 넘는 import를 만들 수 없다. 첫 lib를 만들 때 확인한다.

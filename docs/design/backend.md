@@ -220,12 +220,12 @@ export class Bill {
 ### 3.7 스키마 소스 (clever-lab-api 엔티티)
 
 - 원본: `~/vatech/project/clever-lab-api/libs/entities/src`
-- 어드민의 `infrastructure/*.schema.ts`가 원본 스키마를 어떻게 가져올지는 결정이 필요하다 (spec.md 오픈 이슈와 같은 항목). ADR-0003으로 기록한다.
+- B로 결정했다 (ADR-0003). 어드민의 `infrastructure/*.schema.ts`에 필요한 필드만 정의하고 `strict: false`로 둔다.
 
 | 방법 | 장점 | 단점 |
 | --- | --- | --- |
 | A. 원본 스키마 패키지 참조 | 스키마 변경이 자동 반영된다 | clever-lab-api 배포와 버전 결합. 원본에 GraphQL 등 불필요한 의존성이 따라온다 |
-| B. 필요한 필드만 복사 + `strict: false` (추천) | 의존성이 없다. 모르는 필드도 덮어쓰지 않고 보존한다 | 원본 필드명이 바뀌면 수동으로 따라가야 한다 |
+| B. 필요한 필드만 복사 + `strict: false` (채택) | 의존성이 없다. 모르는 필드도 덮어쓰지 않고 보존한다 | 원본 필드명이 바뀌면 수동으로 따라가야 한다 |
 
 - B를 고르면 수정은 `$set`으로 바뀐 필드만 쓴다. 문서 전체를 저장하지 않으므로 어드민이 모르는 필드를 지우지 않는다.
 
@@ -235,7 +235,7 @@ export class Bill {
 | --- | --- | --- |
 | 인증 | `auth/presentation` | `@nestjs/jwt`로 access token 발급 (만료 8시간, refresh 없음). 쿠키 `lab_admin_token` (httpOnly, Secure, SameSite=Strict). 전역 `JwtAuthGuard`(APP_GUARD)가 쿠키를 검증하고, `@Public()`(`shared/presentation/public.decorator.ts`)이 붙은 로그인·로그아웃·헬스체크만 예외. 역할은 1개라 권한 Guard는 두지 않는다 |
 | 원본 문서 조회 | 각 모듈 리포지토리 `findRawById(id)` | 도메인 엔티티를 거치지 않고 Mongo 문서를 plain object로 반환한다 (`lean()`). 어드민 도메인이 모델링하지 않은 필드까지 보기 위함이다. 마스킹은 application에서 적용한다 |
-| 로그인 검증 | `auth/domain` (`Manager.attemptLogin`, `password.ts`) | 도메인 규칙으로 둔다. pbkdf2-sha512(1026회, 64바이트, `loginPasswordSalt`), 5회 실패 시 잠금 (clkgraph `managerLogin`과 같은 규칙). 비밀번호 해시는 `node:crypto`만 쓰므로 포트를 두지 않는다. 저장은 `ManagerRepository.saveLoginState`가 `failCnt`, `locked`만 `$set`한다 |
+| 로그인 검증 | `auth/domain` (`Manager.attemptLogin`, `password.ts`) | 도메인 규칙으로 둔다. pbkdf2-sha512(1026회, 64바이트, `loginPasswordSalt`), 5회 실패 시 잠금 (clever-lab-api 운영자 로그인의 비밀번호 단계와 같은 규칙, OTP 단계는 없음). 비밀번호 해시는 `node:crypto`만 쓰므로 포트를 두지 않는다. 저장은 `ManagerRepository.saveLoginState`가 `failCnt`, `locked`만 `$set`한다 |
 | 인증 오류 응답 | `auth/presentation/auth.controller.ts` | 아이디 없음·비밀번호 틀림 → 401 `INVALID_CREDENTIALS`, 잠김 → 423 `ACCOUNT_LOCKED`, 세션 없음·만료 → 401 `UNAUTHENTICATED`. 본문은 `ErrorResponse { code, message }` |
 | 설정 | `config/env.ts`, `apps/api/.env.example` | `MONGODB_URI`, `JWT_SECRET`(32자 이상) 필수. 없으면 서버가 뜨지 않는다. Nx가 `apps/api/.env`를 읽어 넣는다 |
 | 앱 공통 설정 | `app.setup.ts` | `/api` prefix, cookie-parser, `ValidationPipe(whitelist, forbidNonWhitelisted)`. `main.ts`와 테스트가 같이 쓴다 |
@@ -284,7 +284,7 @@ M1에서 `docs/adr/`에 아래 ADR을 만든다.
 | --- | --- | --- |
 | ADR-0001 | DI 포트는 abstract class로 선언 (`~/.claude/templates/claude-agents/adr-di-port.md` 복사) | Accepted |
 | ADR-0002 | 도메인 엔티티와 Mongoose 스키마 분리, mapper로 시간 타입 통일 | Proposed |
-| ADR-0003 | clever-lab-api 스키마 소스 방식 (3.7의 A/B) | Proposed |
+| ADR-0003 | clever-lab-api 스키마 소스 방식 (3.7의 B 채택) | Accepted |
 | ADR-0004 | 운영 DB 쓰기 범위 제한 (허용 필드 `$set`만, 삭제 금지), 어드민 DB 분리 | Proposed |
 
 ## 7. 규칙 강제 방법
@@ -303,6 +303,6 @@ CI에서는 `pnpm nx affected -t lint test typecheck build`와 `pnpm deps:check`
 
 ## 8. 리뷰 필요 사항
 
-- [ ] 스키마 소스 방식 A/B 선택 (3.7)
+- [x] 스키마 소스 방식 A/B 선택 (3.7): B
 - [ ] `lab-order` ↔ `bill` 상호 참조 처리 방식 (3.5): 우선 한쪽 모듈에 두기, 문제가 되면 `document-link` 모듈로 분리
 - [ ] 문서 언어: ewoosoft 팀 규칙상 한국어/영어 병기가 필요한지

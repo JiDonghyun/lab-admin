@@ -55,7 +55,7 @@
 | 빌드      | Vite 8 (`@nx/vite`)                                                    | 개발 서버 4200, `/api`는 3000으로 프록시                                 |
 | UI        | React 19, Ant Design 6                                                 | `ConfigProvider` 한국어 locale. CRUD 프레임워크는 쓰지 않음 (ADR-0005)   |
 | 라우팅    | React Router 8                                                         | 라이브러리 모드 (`createBrowserRouter`). SSR 프레임워크 모드는 쓰지 않음 |
-| 서버 상태 | TanStack Query 5                                                       | Phase 1 M3에서 추가                                                      |
+| 서버 상태 | TanStack Query 5                                                       | Phase 1 M2에서 추가                                                      |
 | 날짜      | dayjs + `utc`, `timezone` 플러그인                                     | Asia/Seoul 기준 표시·검색                                                |
 | 테스트    | Vitest 4 + Testing Library (jsdom)                                     |                                                                          |
 | 구조      | FSD (`app` > `pages` > `widgets` > `features` > `entities` > `shared`) | `@/` 별칭으로 레이어 간 import                                           |
@@ -92,9 +92,9 @@ CI(GitHub Actions)는 PR마다 `format:check`, `lint test build typecheck`, `dep
 
 - spec, design(backend, frontend), ADR 리뷰
 - Phase 1 시작 전에 정할 오픈 이슈
-  - 스키마 소스 방식 (ADR-0003, design/backend.md 3.7)
-  - 로컬 개발용 데이터 준비 방법 (시드 데이터 또는 QA DB 덤프)
-  - 개발자가 쓸 `clkManagers` 계정
+  - [x] 스키마 소스 방식: B, 필요한 필드만 복사 (ADR-0003)
+  - [x] 로컬 개발용 데이터 준비 방법: 시드 스크립트
+  - [x] 어드민 로그인 OTP: 두지 않는다 (spec.md 6.1)
 - 나머지 오픈 이슈는 해당 Phase 전까지 정한다 (6장).
 
 ### Phase 1. 기반 (M1~M3)
@@ -103,12 +103,13 @@ CI(GitHub Actions)는 PR마다 `format:check`, `lint test build typecheck`, `dep
 
 - 앱 생성(`apps/api`, `apps/web`), 빈 메뉴가 있는 레이아웃, ESLint·dependency-cruiser 레이어 규칙, 루트 스크립트와 CI
 
-**M2. 로그인** (요구사항 AUTH-01~08)
+**M2. 로그인** (요구사항 AUTH-01~08) → [tasks/M2-login.md](./tasks/M2-login.md)
 
 - `packages/contracts` 생성 (`scope:shared`, 타입만)
 - api
   - 설정: `config/env.ts`. `MONGODB_URI`, `JWT_SECRET`(32자 이상)이 없으면 서버가 뜨지 않는다. `apps/api/.env.example`
-  - `shared/infrastructure/mongo`: 운영 DB, 어드민 DB 커넥션
+  - `shared/infrastructure/mongo`: 운영 DB 커넥션 (어드민 DB 커넥션은 로그를 쓰는 M4에서 추가)
+  - 로컬 시드 스크립트: 테스트용 `clkManagers` 계정
   - `auth` 모듈
     - domain: `Manager.attemptLogin`, `password.ts` (pbkdf2-sha512, 1026회, 64바이트, `loginPasswordSalt`), 5회 실패 시 잠금
     - infrastructure: `ManagerRepository.saveLoginState`는 `failCnt`, `locked`만 `$set`
@@ -116,6 +117,7 @@ CI(GitHub Actions)는 PR마다 `format:check`, `lint test build typecheck`, `dep
   - 전역 `JwtAuthGuard`(APP_GUARD)와 `@Public()`. 로그인·로그아웃·헬스체크만 예외
   - `app.setup.ts`에 cookie-parser, `ValidationPipe` 추가
 - web
+  - TanStack Query 추가 (`entities/session`이 처음 사용)
   - `shared/api`: fetch 클라이언트 (`credentials: include`), 401이면 로그인 화면으로 이동
   - `entities/session`(`GET /auth/me`), `features/auth-login`, `features/auth-logout`, `pages/login`
   - `app`에 인증 라우트 가드
@@ -124,7 +126,7 @@ CI(GitHub Actions)는 PR마다 `format:check`, `lint test build typecheck`, `dep
 **M3. Lab 목록** (1차 목표, 요구사항 LAB-01, SEC-03)
 
 - api: `lab` 모듈 `GET /labs?page=&size=` (기본 20건, 최대 100건, `createdAt` 내림차순), `shared/presentation/pagination.dto.ts`
-- web: TanStack Query 추가, `entities/lab`, `widgets/lab-table`, `pages/lab-list`. 페이지 번호는 URL query string에 둔다
+- web: `entities/lab`, `widgets/lab-table`, `pages/lab-list`. 페이지 번호는 URL query string에 둔다
 - 목록의 로딩, 빈 결과, 오류 상태를 구분해서 보여준다
 
 **Phase 1 완료 기준**: 로컬 MongoDB에서 로그인 → Lab 목록 → 로그아웃을 시연한다.
@@ -207,9 +209,9 @@ CI(GitHub Actions)는 PR마다 `format:check`, `lint test build typecheck`, `dep
 
 | 오픈 이슈 (spec 8장)                                   | 필요한 시점                 |
 | ------------------------------------------------------ | --------------------------- |
-| 스키마 소스 방식 (ADR-0003)                            | Phase 1 (M2) 전             |
-| 로컬 개발용 데이터 준비                                | Phase 1 (M2) 전             |
-| 개발자용 `clkManagers` 계정                            | Phase 1 (M2) 전             |
+| 스키마 소스 방식 (ADR-0003)                            | 결정: B (2026-10-25)        |
+| 로컬 개발용 데이터 준비                                | 결정: 시드 스크립트         |
+| 개발자용 `clkManagers` 계정                            | Phase 6 전 (QA·운영 접속)   |
 | Lab 검색 항목 확정                                     | Phase 2 (M4) 전             |
 | 개인정보 마스킹 범위                                   | Phase 2 (M4) 전             |
 | 엔티티별 수정 가능 필드                                | 각 수정 단계(M5, M7, M9) 전 |
